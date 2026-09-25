@@ -334,6 +334,7 @@ Custom commands can be created in:
               },
             }
           : {}),
+        ...(tokenUsage.rateLimits ? { rateLimits: tokenUsage.rateLimits } : {}),
         provider,
         model,
       },
@@ -367,6 +368,9 @@ Custom commands can be created in:
     const statusProvider = readModelProvider(context?.provider);
     const model = await resolveCommandModel(providerModelsService, statusProvider, context);
     const memoryUsage = process.memoryUsage();
+    // The client sends the plan windows it is already showing in the composer,
+    // so /status mirrors the CLI's own status output without another fetch.
+    const rateLimits = context?.tokenUsage?.rateLimits;
 
     return {
       type: "builtin",
@@ -378,6 +382,7 @@ Custom commands can be created in:
         uptimeSeconds: Math.floor(uptime),
         model,
         provider: statusProvider,
+        ...(rateLimits ? { rateLimits } : {}),
         nodeVersion: process.version,
         platform: process.platform,
         pid: process.pid,

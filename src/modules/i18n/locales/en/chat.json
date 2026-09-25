@@ -329,6 +329,13 @@
     "cancelEditing": "Cancel editing",
     "userDeniedTool": "User denied tool use",
     "showTokenUsage": "Show token usage",
+    "tokensUsedShort": "{{formattedCount}} used",
+    "tokensRemaining": "{{formattedCount}} left",
+    "fiveHourRemaining": "5h {{percent}}% left",
+    "weeklyRemaining": "7d {{percent}}% left",
+    "scopedWeeklyRemaining": "{{scope}} 7d {{percent}}% left",
+    "planLimits": "Plan usage",
+    "resetsAt": "Resets {{time}}",
     "fallbackCommands": {
       "models": "Browse available models for the active provider.",
       "cost": "Review token usage for the active session.",

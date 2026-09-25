@@ -58,6 +58,7 @@ test('token usage lookup requires only the app-facing session id for Claude', as
     assert.deepEqual(await service.getSessionTokenUsage('app-session'), {
       used: 155,
       total: 180_000,
+      contextUsed: 155,
       inputTokens: 125,
       outputTokens: 30,
       cacheReadTokens: 20,
@@ -92,7 +93,12 @@ test('Codex token usage uses the latest token_count snapshot', async () => {
           type: 'token_count',
           info: {
             total_token_usage: { input_tokens: 40, output_tokens: 9, total_tokens: 49 },
+            last_token_usage: { input_tokens: 25, output_tokens: 6, total_tokens: 31 },
             model_context_window: 250_000,
+          },
+          rate_limits: {
+            primary: { used_percent: 24, window_minutes: 300, resets_at: 2_000_000_000 },
+            secondary: { used_percent: 50, window_minutes: 10_080, resets_at: 2_000_000_000 },
           },
         },
       }),
@@ -108,6 +114,11 @@ test('Codex token usage uses the latest token_count snapshot', async () => {
     assert.deepEqual(await service.getSessionTokenUsage('app-session'), {
       used: 49,
       total: 250_000,
+      contextUsed: 31,
+      rateLimits: {
+        primary: { used_percent: 24, window_minutes: 300, resets_at: 2_000_000_000 },
+        secondary: { used_percent: 50, window_minutes: 10_080, resets_at: 2_000_000_000 },
+      },
       inputTokens: 40,
       outputTokens: 9,
       breakdown: { input: 40, output: 9 },
@@ -201,6 +212,7 @@ test('the Claude summarizer reads the newest assistant turn, not the whole conve
   assert.deepEqual(summarizeClaudeTokenUsage(entries, '200000'), {
     used: 4183,
     total: 200_000,
+    contextUsed: 4183,
     inputTokens: 4103,
     outputTokens: 80,
     cacheReadTokens: 4000,

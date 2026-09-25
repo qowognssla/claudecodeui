@@ -1,6 +1,7 @@
 import { memo } from 'react';
-import { ActivityIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+
+import { getProviderPlanWindow, getProviderScopedPlanWindows } from '@/shared/utils';
 
 type TokenUsageSummaryProps = {
   usage: Record<string, unknown> | null;
@@ -45,22 +46,78 @@ function TokenUsageSummary({ usage, onClick }: TokenUsageSummaryProps) {
   const inputTokens = readUsageNumber(usage?.inputTokens ?? breakdown?.input);
   const outputTokens = readUsageNumber(usage?.outputTokens ?? breakdown?.output);
   const usedTokens = readUsageNumber(usage?.used) || inputTokens + outputTokens;
+  const contextUsed = Number(usage?.contextUsed);
+  const contextTotal = Number(usage?.total);
+  const hasRemaining = usage?.contextUsed != null
+    && Number.isFinite(contextUsed)
+    && Number.isFinite(contextTotal)
+    && contextUsed >= 0
+    && contextTotal > 0
+    && contextUsed <= contextTotal;
+  const remainingTokens = hasRemaining ? contextTotal - contextUsed : 0;
+  const fiveHour = getProviderPlanWindow(usage?.rateLimits, 300);
+  const weekly = getProviderPlanWindow(usage?.rateLimits, 10_080);
+  const scopedWindows = getProviderScopedPlanWindows(usage?.rateLimits);
+  const progress = fiveHour ? fiveHour.used_percent / 100
+    : hasRemaining ? contextUsed / contextTotal : 0;
+  const remainingLabel = t('chat:misc.tokensRemaining', {
+    count: remainingTokens,
+    formattedCount: formatTokenCount(remainingTokens),
+    defaultValue: '{{formattedCount}} left',
+  });
+  const usedLabel = t('chat:misc.tokensUsedShort', {
+    count: hasRemaining ? contextUsed : usedTokens,
+    formattedCount: formatTokenCount(hasRemaining ? contextUsed : usedTokens),
+    defaultValue: '{{formattedCount}} used',
+  });
+  const fiveHourLabel = fiveHour ? t('chat:misc.fiveHourRemaining', {
+    percent: Math.round(100 - fiveHour.used_percent),
+  }) : null;
+  const weeklyLabel = weekly ? t('chat:misc.weeklyRemaining', {
+    percent: Math.round(100 - weekly.used_percent),
+  }) : null;
+  // Model-scoped weekly allowances (e.g. Fable) sit after the account-wide ones.
+  const scopedLabels = scopedWindows.map((window) => t('chat:misc.scopedWeeklyRemaining', {
+    scope: window.scope,
+    percent: Math.round(100 - window.used_percent),
+  }));
+  const planLabels = [weeklyLabel, ...scopedLabels].filter((value): value is string => Boolean(value));
+  const contextLabel = hasRemaining ? `${usedLabel} · ${remainingLabel}`
+    : usage && usedTokens > 0 ? usedLabel : null;
+  const label = [fiveHourLabel, ...planLabels, contextLabel].filter(Boolean).join(' · ')
+    || t('chat:misc.showTokenUsage');
 
   return (
     <button
       type="button"
       onClick={onClick}
       className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border/70 bg-background/70 px-2 text-xs text-muted-foreground shadow-sm transition-colors hover:border-primary/25 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:gap-2 sm:px-2.5"
-      title={t('chat:misc.tokensUsed', { count: usedTokens })}
-      aria-label={t('chat:misc.showTokenUsage')}
+      title={label}
+      aria-label={`${t('chat:misc.showTokenUsage')}: ${label}`}
     >
-      <span className="grid h-5 w-5 place-items-center rounded-md bg-primary/10 text-primary">
-        <ActivityIcon className="h-3.5 w-3.5" />
-      </span>
-      <span className="font-medium text-foreground">{formatTokenCount(usedTokens)}</span>
-      <span className="hidden text-muted-foreground/70 sm:inline">
-        {t('chat:misc.tokensLabel', { count: usedTokens })}
-      </span>
+      <svg aria-hidden="true" className="h-5 w-5 shrink-0 -rotate-90" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="3" className="text-muted-foreground/25" />
+        <circle
+          cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="3"
+          strokeLinecap="round" strokeDasharray={`${progress * 56.55} 56.55`}
+          className="text-primary transition-all duration-300"
+        />
+      </svg>
+      {fiveHourLabel ? (
+        <>
+          {/* Only the five-hour window is shown inline; the weekly and model-scoped windows stay in the tooltip and the usage modal. */}
+          <span className="font-medium text-foreground">{fiveHourLabel}</span>
+          {hasRemaining && <span className="hidden text-muted-foreground/70 sm:inline">· {remainingLabel}</span>}
+        </>
+      ) : hasRemaining ? (
+        <>
+          <span className="hidden font-medium text-foreground sm:inline">{usedLabel}</span>
+          <span className="hidden text-muted-foreground/50 sm:inline">·</span>
+          <span className="font-medium text-foreground">{remainingLabel}</span>
+        </>
+      ) : (
+        <span className="font-medium text-foreground">{usage ? usedLabel : t('chat:misc.showTokenUsage')}</span>
+      )}
     </button>
   );
 }

@@ -32,6 +32,10 @@ type ProviderTokenUsageServiceDependencies = {
 type TokenUsageResult = {
   used: number;
   total?: number;
+  /** Tokens occupying the current context window, when the provider reports them. */
+  contextUsed?: number;
+  /** Codex account limits from the same token-count snapshot, if present. */
+  rateLimits?: unknown;
   inputTokens: number;
   outputTokens: number;
   cacheReadTokens?: number;
@@ -150,6 +154,7 @@ function findCodexTokenUsage(fileContent: string): TokenUsageResult | null {
       let inputTokens = 0;
       let outputTokens = 0;
       let totalTokens = 0;
+      const lastTurn = tokenInfo.last_token_usage;
       if (tokenInfo.total_token_usage) {
         inputTokens = readUsageNumber(tokenInfo.total_token_usage.input_tokens);
         outputTokens = readUsageNumber(tokenInfo.total_token_usage.output_tokens);
@@ -159,6 +164,11 @@ function findCodexTokenUsage(fileContent: string): TokenUsageResult | null {
       return {
         used: totalTokens,
         total: readUsageNumber(tokenInfo.model_context_window) || 200_000,
+        ...(lastTurn ? {
+          contextUsed: readUsageNumber(lastTurn.total_tokens)
+            || readUsageNumber(lastTurn.input_tokens) + readUsageNumber(lastTurn.output_tokens),
+        } : {}),
+        ...(entry.payload?.rate_limits ? { rateLimits: entry.payload.rate_limits } : {}),
         inputTokens,
         outputTokens,
         breakdown: { input: inputTokens, output: outputTokens },
@@ -251,6 +261,7 @@ export function summarizeClaudeTokenUsage(
   return {
     used: inputTokens + outputTokens,
     total: contextWindow,
+    contextUsed: inputTokens + outputTokens,
     inputTokens,
     outputTokens,
     cacheReadTokens,

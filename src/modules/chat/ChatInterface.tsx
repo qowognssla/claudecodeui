@@ -18,6 +18,7 @@ import type {
 import { useChatProviderState } from '@/modules/chat/hooks/useChatProviderState';
 import { useScheduledMessages } from '@/modules/chat/composer/useScheduledMessages';
 import { useChatSessionState } from '@/modules/chat/hooks/useChatSessionState';
+import { useProviderPlanUsage } from '@/modules/chat/hooks/useProviderPlanUsage';
 import { useChatRealtimeHandlers } from '@/modules/chat/hooks/useChatRealtimeHandlers';
 import { useChatComposerState } from '@/modules/chat/hooks/useChatComposerState';
 import { useSessionStore } from '@/modules/chat/hooks/useSessionStore';
@@ -176,6 +177,14 @@ function ChatInterface({
     sessionStore,
   });
 
+  // Live account windows win over the snapshot a Codex transcript recorded at
+  // its last turn, which may be hours old.
+  const providerPlanUsage = useProviderPlanUsage(provider, isActive);
+  const displayedTokenBudget = useMemo(() => {
+    const rateLimits = providerPlanUsage ?? tokenBudget?.rateLimits;
+    return tokenBudget || rateLimits ? { ...(tokenBudget ?? {}), rateLimits } : null;
+  }, [providerPlanUsage, tokenBudget]);
+
   // Brand-new conversation: the composer allocated a stable session id via
   // the session gateway before the first send. Record it locally and put it
   // in the URL — this id never changes again, so there is no later handoff.
@@ -247,7 +256,7 @@ function ChatInterface({
     isLoading: isProcessing,
     processingSessions,
     canAbortSession,
-    tokenBudget,
+    tokenBudget: displayedTokenBudget,
     sendMessage,
     sendByCtrlEnter,
     onSessionProcessing,
@@ -527,7 +536,7 @@ function ChatInterface({
           availableModelOptions={currentProviderModelOptions}
           onSelectModel={handleSelectComposerModel}
           modelsLoading={providerModelsLoading}
-          tokenBudget={tokenBudget}
+          tokenBudget={displayedTokenBudget}
           onShowTokenUsage={showCostModal}
           isEditingSentMessage={Boolean(editingAnchorId)}
           onCancelEditMessage={cancelEditMessage}

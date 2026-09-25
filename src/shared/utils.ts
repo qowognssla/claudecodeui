@@ -1,7 +1,63 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
-import type { Project, ProjectSession } from '@/shared/types';
+import type { Project, ProjectSession, ProviderPlanWindow } from '@/shared/types';
+
+//----------------- PROVIDER PLAN USAGE ------------
+
+/**
+ * Validates one raw plan window. A window whose reset time has already passed
+ * is a stale session snapshot, not a remaining balance, and yields null; a
+ * window without a reset time (nothing spent yet) is kept.
+ */
+function readProviderPlanWindow(candidate: unknown): ProviderPlanWindow | null {
+  if (!candidate || typeof candidate !== 'object') return null;
+  const window = candidate as Record<string, unknown>;
+  const usedPercent = Number(window.used_percent);
+  const windowMinutes = Number(window.window_minutes);
+  const hasReset = window.resets_at != null;
+  const resetsAt = Number(window.resets_at);
+  if (!Number.isFinite(windowMinutes) || windowMinutes <= 0
+    || !Number.isFinite(usedPercent) || usedPercent < 0 || usedPercent > 100
+    || (hasReset && (!Number.isFinite(resetsAt) || resetsAt * 1000 <= Date.now()))) return null;
+  return {
+    used_percent: usedPercent,
+    window_minutes: windowMinutes,
+    ...(hasReset ? { resets_at: resetsAt } : {}),
+    ...(typeof window.scope === 'string' && window.scope.trim() ? { scope: window.scope.trim() } : {}),
+  };
+}
+
+/**
+ * Reads the account-wide plan window of one length (300 for five hours,
+ * 10080 for a week) from a provider's `rateLimits` payload, skipping stale
+ * windows as described on `readProviderPlanWindow`.
+ */
+export function getProviderPlanWindow(value: unknown, windowMinutes: number): ProviderPlanWindow | null {
+  if (!value || typeof value !== 'object') return null;
+  const limits = value as Record<string, unknown>;
+  for (const candidate of [limits.primary, limits.secondary]) {
+    const window = readProviderPlanWindow(candidate);
+    if (window && window.window_minutes === windowMinutes) return window;
+  }
+  return null;
+}
+
+/**
+ * Reads the model-scoped windows (e.g. Claude's separate weekly Fable
+ * allowance) from a provider's `rateLimits` payload. Only windows that name
+ * their scope and are still current are returned, in payload order.
+ */
+export function getProviderScopedPlanWindows(value: unknown): ProviderPlanWindow[] {
+  if (!value || typeof value !== 'object') return [];
+  const scoped = (value as Record<string, unknown>).scoped;
+  if (!Array.isArray(scoped)) return [];
+  return scoped
+    .map(readProviderPlanWindow)
+    .filter((window): window is ProviderPlanWindow => window !== null && Boolean(window.scope));
+}
+
+// ---------------------------
 
 //----------------- DEPLOYMENT MODE ------------
 

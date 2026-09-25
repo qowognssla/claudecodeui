@@ -676,6 +676,21 @@ type MessageKind =
 
 //----------------- CHAT COMPOSER ------------
 
+/** One provider plan window: percentage spent, duration, optional Unix reset time, and the model or surface it is scoped to when it is not account-wide. */
+export type ProviderPlanWindow = {
+  used_percent: number;
+  window_minutes: number;
+  resets_at?: number;
+  scope?: string;
+};
+
+/** Five-hour (`primary`), weekly (`secondary`), and model-scoped weekly (`scoped`, e.g. Claude's Fable allowance) account plan windows shown alongside the session's context usage in the composer and the cost/status modals. */
+export type ProviderPlanUsage = {
+  primary?: ProviderPlanWindow;
+  secondary?: ProviderPlanWindow;
+  scoped?: ProviderPlanWindow[];
+};
+
 /** Result payload of the chat `/model` slash command, describing the session's current provider and model plus the model catalog it may switch to, used to populate the command modal's model picker. */
 export type ModelCommandData = {
   current?: {
@@ -699,6 +714,7 @@ export type CostCommandData = {
     input?: number;
     output?: number;
   };
+  rateLimits?: ProviderPlanUsage;
   provider?: string;
   model?: string;
 };
@@ -713,6 +729,8 @@ export type StatusCommandData = {
   nodeVersion?: string;
   platform?: string;
   pid?: number;
+  /** Account plan windows echoed from the composer so /status matches the CLI's own status output. */
+  rateLimits?: ProviderPlanUsage;
   memoryUsage?: {
     rssMb?: number;
     heapUsedMb?: number;

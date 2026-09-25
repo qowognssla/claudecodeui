@@ -193,6 +193,15 @@ async function withAppServer<T>(
 
 export const codexAppServer = {
   /**
+   * Reads the signed-in account's plan windows (five-hour and weekly) as the
+   * Codex CLI itself reports them in `/status`. The raw result is returned so
+   * the plan-usage service owns the normalization.
+   */
+  async readAccountRateLimits(): Promise<unknown> {
+    return withAppServer((call) => call('account/rateLimits/read', {}));
+  },
+
+  /**
    * Copies a thread into a new one that ends at `lastTurnId`, or copies the
    * whole thread when it is omitted.
    *

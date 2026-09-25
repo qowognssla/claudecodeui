@@ -26,6 +26,7 @@ import type {
   ProviderModelsDefinition,CommandModalPayload,CostCommandData,HelpCommandData,ModelCommandData,StatusCommandData
 } from '@/shared/types';
 import ModelLibraryPanel from '@/modules/chat/modals/ModelLibraryPanel';
+import { getProviderPlanWindow, getProviderScopedPlanWindows } from '@/shared/utils';
 
 type CommandResultModalProps = {
   payload: CommandModalPayload | null;
@@ -418,6 +419,54 @@ function ModelsContent({
   );
 }
 
+/**
+ * Five-hour, weekly, and model-scoped weekly account windows, rendered the
+ * way the CLIs' own `/status` output describes them. Shared by the cost and
+ * status views; renders nothing for providers without plan windows.
+ */
+function PlanUsagePanel({ rateLimits }: { rateLimits: unknown }) {
+  const { t } = useTranslation();
+  const planWindows = [
+    { key: 'fiveHour', label: 'fiveHourRemaining', window: getProviderPlanWindow(rateLimits, 300) },
+    { key: 'weekly', label: 'weeklyRemaining', window: getProviderPlanWindow(rateLimits, 10_080) },
+    ...getProviderScopedPlanWindows(rateLimits).map((window) => ({
+      key: `scoped:${window.scope}`,
+      label: 'scopedWeeklyRemaining',
+      window,
+    })),
+  ].filter((entry) => entry.window !== null);
+  if (planWindows.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-3 rounded-2xl border border-border/70 bg-background/75 p-4">
+      <p className="text-sm font-semibold text-foreground">{t('chat:misc.planLimits')}</p>
+      {planWindows.map(({ key, label, window }) => {
+        if (!window) return null;
+        const remaining = Math.round(100 - window.used_percent);
+        return (
+          <div key={key} className="space-y-1.5">
+            <div className="flex items-center justify-between gap-2 text-xs">
+              <span className="font-medium text-foreground">
+                {t(`chat:misc.${label}`, { percent: remaining, scope: window.scope })}
+              </span>
+              {window.resets_at && (
+                <span className="text-muted-foreground">
+                  {t('chat:misc.resetsAt', { time: new Date(window.resets_at * 1000).toLocaleString() })}
+                </span>
+              )}
+            </div>
+            <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+              <div className="h-full rounded-full bg-primary" style={{ width: `${window.used_percent}%` }} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function CostContent({ data }: { data: CostCommandData }) {
   const used = Number(data.tokenUsage?.used ?? 0);
   const total = Number(data.tokenUsage?.total ?? 0);
@@ -459,6 +508,7 @@ function CostContent({ data }: { data: CostCommandData }) {
 
   return (
     <div className="space-y-4">
+      <PlanUsagePanel rateLimits={data.rateLimits} />
       <div className="overflow-hidden rounded-2xl border border-border/70 bg-background/75">
         {usageRows.map((row) => {
           const Icon = row.icon;
@@ -524,6 +574,8 @@ function StatusContent({ data }: { data: StatusCommandData }) {
         </div>
         <Badge className="rounded-full bg-emerald-500 text-white hover:bg-emerald-500">Healthy</Badge>
       </div>
+
+      <PlanUsagePanel rateLimits={data.rateLimits} />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {rows.map((row) => (

@@ -1272,7 +1272,18 @@ async function getCodexSessionMessages(sessionId: string): Promise<CodexHistoryR
         const info = payload.info as AnyRecord;
         if (info.total_token_usage) {
           const usage = info.total_token_usage as AnyRecord;
-          tokenUsage = { used: usage.total_tokens || 0, total: info.model_context_window || 200000 };
+          const lastTurn = info.last_token_usage as AnyRecord | undefined;
+          // The session total can exceed one context window; only the last
+          // turn can describe how much of that window is occupied now.
+          tokenUsage = {
+            used: usage.total_tokens || 0,
+            total: info.model_context_window || 200000,
+            ...(lastTurn ? {
+              contextUsed: Number(lastTurn.total_tokens)
+                || Number(lastTurn.input_tokens || 0) + Number(lastTurn.output_tokens || 0),
+            } : {}),
+            ...(payload.rate_limits ? { rateLimits: payload.rate_limits } : {}),
+          };
         }
         continue;
       }

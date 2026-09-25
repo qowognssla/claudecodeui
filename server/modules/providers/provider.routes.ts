@@ -5,6 +5,7 @@ import { providerCapabilitiesService } from '@/modules/providers/services/provid
 import { providerMcpService } from '@/modules/providers/services/mcp.service.js';
 import { providerModelsService } from '@/modules/providers/services/provider-models.service.js';
 import { providerTokenUsageService } from '@/modules/providers/services/provider-token-usage.service.js';
+import { providerPlanUsageService } from '@/modules/providers/services/provider-plan-usage.service.js';
 import { providerSkillsService } from '@/modules/providers/services/skills.service.js';
 import { sessionConversationsSearchService } from '@/modules/providers/services/session-conversations-search.service.js';
 import { sessionsService } from '@/modules/providers/services/sessions.service.js';
@@ -806,6 +807,17 @@ router.get(
     const sessionId = parseSessionId(req.params.sessionId);
     const result = await providerTokenUsageService.getSessionTokenUsage(sessionId);
     res.json(createApiSuccessResponse(result));
+  }),
+);
+
+// Account-wide plan windows (five-hour / weekly) for providers whose CLI
+// reports them. Registered before the `:sessionId` routes so `plan-usage`
+// is never read as a session id.
+router.get(
+  '/plan-usage/:provider',
+  asyncHandler(async (req: Request, res: Response) => {
+    const provider = parseProvider(req.params.provider);
+    res.json(createApiSuccessResponse(await providerPlanUsageService.getPlanUsage(provider)));
   }),
 );
 

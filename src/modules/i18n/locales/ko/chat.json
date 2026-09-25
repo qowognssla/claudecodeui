@@ -244,6 +244,16 @@
       "cancel": "취소"
     }
   },
+  "misc": {
+    "showTokenUsage": "토큰 사용량 보기",
+    "tokensUsedShort": "{{formattedCount}} 사용",
+    "tokensRemaining": "{{formattedCount}} 남음",
+    "fiveHourRemaining": "5시간 {{percent}}% 남음",
+    "weeklyRemaining": "7일 {{percent}}% 남음",
+    "scopedWeeklyRemaining": "{{scope}} 7일 {{percent}}% 남음",
+    "planLimits": "요금제 사용량",
+    "resetsAt": "{{time}}에 초기화"
+  },
   "export": {
     "trigger": "대화 내보내기",
     "heading": "내보내기 형식",

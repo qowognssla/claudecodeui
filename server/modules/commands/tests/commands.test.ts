@@ -112,3 +112,28 @@ test('cost and status commands report the same resolved model as /models', async
   assert.equal((cost.data as { model: string }).model, 'haiku');
   assert.equal((status.data as { model: string }).model, 'haiku');
 });
+
+test('cost command carries the provider plan windows into the usage detail', async () => {
+  const rateLimits = {
+    primary: { used_percent: 20, window_minutes: 300, resets_at: 2_000_000_000 },
+  };
+  const cost = await executeCommand('/cost', {
+    provider: 'codex',
+    tokenUsage: { used: 1000, total: 200_000, rateLimits },
+  });
+
+  assert.deepEqual((cost.data as { rateLimits: unknown }).rateLimits, rateLimits);
+});
+
+test('status command carries the provider plan windows next to the runtime facts', async () => {
+  const rateLimits = {
+    primary: { used_percent: 11, window_minutes: 300, resets_at: 2_000_000_000 },
+    secondary: { used_percent: 12, window_minutes: 10_080, resets_at: 2_000_000_000 },
+  };
+  const status = await executeCommand('/status', {
+    provider: 'claude',
+    tokenUsage: { used: 1000, total: 200_000, rateLimits },
+  });
+
+  assert.deepEqual((status.data as { rateLimits: unknown }).rateLimits, rateLimits);
+});
