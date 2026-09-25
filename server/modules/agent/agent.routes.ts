@@ -643,7 +643,7 @@ export function createAgentRouter(dependencies: AgentRouterDependencies): expres
    *
    * @param {string} model - (Optional) Model identifier for providers.
    *
-   *                        Claude models: 'default', 'sonnet', 'opus', 'haiku', 'sonnet[1m]', 'opus[1m]', 'fable'
+   *                        Claude models: whatever the Claude CLI lists for the signed-in account, e.g. 'default', 'sonnet', 'haiku', 'claude-fable-5-1[1m]'
    *                        Cursor models: 'gpt-5' (default), 'gpt-5.2', 'gpt-5.2-high', 'sonnet-4.5', 'opus-4.5',
    *                                       'composer-1', 'auto', 'gpt-5.1', 'gpt-5.1-high',
    *                                       'gpt-5.1-codex', 'gpt-5.1-codex-high', 'gpt-5.1-codex-max',
