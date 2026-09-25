@@ -138,12 +138,31 @@ function getSetupMessage(settings: BrowserUseSettings, readiness: RuntimeReadine
   return readiness.installMessage || 'Browser runtime is not ready.';
 }
 
+/**
+ * Playwright is installed on demand into this directory, never into
+ * CloudCLI's own node_modules: `npm install` inside the app makes npm
+ * reconcile CloudCLI's whole dependency tree, which under NODE_ENV=production
+ * prunes the devDependencies a source checkout builds with, and in a global
+ * install pulls every devDependency in. The server's cwd is no better, since
+ * it is wherever `cloudcli` was launched from. Resolved per call so the home
+ * directory is read when the runtime is used.
+ */
+function getPlaywrightRuntimeRoot(): string {
+  return path.join(os.homedir(), '.cloudcli', 'browser-use', 'runtime');
+}
+
 function getPlaywright(): any | null {
-  try {
-    return require('playwright');
-  } catch {
-    return null;
+  // The on-demand runtime wins; a copy CloudCLI resolves itself still counts, which covers
+  // installs made before the runtime directory existed and setups that ship Playwright.
+  const runtimeRequire = createRequire(path.join(getPlaywrightRuntimeRoot(), 'package.json'));
+  for (const load of [() => runtimeRequire('playwright'), () => require('playwright')]) {
+    try {
+      return load();
+    } catch {
+      // Not installed at this location; try the next one.
+    }
   }
+  return null;
 }
 
 function getMcpCommand(): { command: string; args: string[] } {
@@ -241,10 +260,10 @@ const INSTALL_COMMAND_TIMEOUT_MS = Number.parseInt(
   10,
 );
 
-function runCommand(command: string, args: string[]): Promise<void> {
+function runCommand(command: string, args: string[], cwd: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
-      cwd: process.cwd(),
+      cwd,
       env: process.env,
       shell: false,
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -292,25 +311,48 @@ function formatInstallError(error: unknown): string {
   return message || 'Failed to install Browser runtime.';
 }
 
+/**
+ * Gives the runtime directory a manifest of its own, so npm installs there
+ * instead of walking up to an unrelated package.json (one in the home
+ * directory, say) and installing into that project.
+ */
+async function ensurePlaywrightRuntimeManifest(runtimeRoot: string): Promise<void> {
+  await fs.promises.mkdir(runtimeRoot, { recursive: true });
+  try {
+    await fs.promises.writeFile(
+      path.join(runtimeRoot, 'package.json'),
+      `${JSON.stringify({ name: 'cloudcli-browser-runtime', private: true }, null, 2)}\n`,
+      { flag: 'wx' },
+    );
+  } catch (error: any) {
+    if (error?.code !== 'EEXIST') {
+      throw error;
+    }
+  }
+}
+
 async function installRuntime(): Promise<{ success: boolean; message: string }> {
   if (installPromise) {
     return installPromise;
   }
 
   const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+  const runtimeRoot = getPlaywrightRuntimeRoot();
   runtimeProbeCache = null;
   installPromise = (async () => {
     try {
       lastInstallMessage = 'Installing Playwright package...';
-      await runCommand(npmCommand, ['install', '--no-save', '--no-package-lock', 'playwright']);
+      await ensurePlaywrightRuntimeManifest(runtimeRoot);
+      // Every step runs inside the runtime directory, so `npm exec` finds that copy's CLI.
+      await runCommand(npmCommand, ['install', '--no-audit', '--no-fund', 'playwright'], runtimeRoot);
 
       if (process.platform === 'linux') {
         lastInstallMessage = 'Installing Chromium system dependencies...';
-        await runCommand(npmCommand, ['exec', '--', 'playwright', 'install-deps', 'chromium']);
+        await runCommand(npmCommand, ['exec', '--', 'playwright', 'install-deps', 'chromium'], runtimeRoot);
       }
 
       lastInstallMessage = 'Installing Chromium runtime...';
-      await runCommand(npmCommand, ['exec', '--', 'playwright', 'install', 'chromium']);
+      await runCommand(npmCommand, ['exec', '--', 'playwright', 'install', 'chromium'], runtimeRoot);
 
       lastInstallMessage = 'Browser runtime installed.';
       return { success: true, message: lastInstallMessage };
