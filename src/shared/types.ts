@@ -7,6 +7,12 @@ import type { NavigateFunction } from 'react-router-dom';
 /** Identifies which coding-agent CLI backs a session, project selection or model list. */
 export type LLMProvider = 'claude' | 'cursor' | 'codex' | 'opencode';
 
+/** One reasoning-effort level a model accepts; `description` is present only when the provider ships one (Codex does, Claude does not). */
+export type ProviderEffortOption = {
+  value: string;
+  description?: string;
+};
+
 /** One selectable model in a provider's model menu, including its optional reasoning-effort choices. */
 export type ProviderModelOption = {
   value: string;
@@ -16,10 +22,7 @@ export type ProviderModelOption = {
   isCustom?: boolean;
   effort?: {
     default?: string;
-    values: {
-      value: string;
-      description?: string;
-    }[];
+    values: ProviderEffortOption[];
   };
 };
 

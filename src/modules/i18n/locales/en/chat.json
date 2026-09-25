@@ -143,12 +143,39 @@
     "model": "Model",
     "effortDefault": "Default",
     "loadingModels": "Loading models…",
-    "modelMenu": "Select model and reasoning effort",
+    "modelMenu": "Select model, effort and permissions",
+    "permission": "Permissions",
     "permissionHeading": "How should {{provider}} actions be approved?",
     "editing": {
       "title": "Replacing an earlier message",
       "filesNotReverted": "files the agent already changed are not reverted",
       "cancel": "Cancel"
+    },
+    "effort": "Effort",
+    "effortLevels": {
+      "default": "Default",
+      "none": "None",
+      "minimal": "Minimal",
+      "thinking": "Thinking",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "xhigh": "Extra high",
+      "max": "Max",
+      "ultra": "Ultra"
+    },
+    "effortDescriptions": {
+      "default": "Use the CLI setting or the model's recommended effort",
+      "none": "Answer directly without extended reasoning",
+      "minimal": "Fastest responses with almost no reasoning",
+      "thinking": "Turn on the model's extended thinking",
+      "low": "Fast responses with lighter reasoning",
+      "medium": "Balances speed and reasoning depth",
+      "high": "Greater reasoning depth for complex problems",
+      "xhigh": "Extra reasoning depth for complex problems",
+      "max": "Maximum reasoning depth for the hardest problems",
+      "ultra": "Maximum reasoning with automatic task delegation",
+      "ultracode": "Highest effort plus standing workflow orchestration"
     }
   },
   "providerSelection": {

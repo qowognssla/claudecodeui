@@ -82,14 +82,14 @@
     "permissionMode": "권한 모드",
     "modes": {
       "default": "기본 모드",
-      "auto": "Auto Mode",
+      "auto": "자동 모드",
       "acceptEdits": "편집 허용",
       "bypassPermissions": "권한 우회",
       "plan": "Plan 모드"
     },
     "descriptions": {
       "default": "신뢰할 수 있는 명령어(ls, cat, grep, git status 등)만 자동 실행됩니다. 다른 명령어는 건너뜁니다. 워크스페이스에 쓰기 가능.",
-      "auto": "A model classifier decides per tool call whether to approve or deny. Hands-off, but safer than Bypass — denials still happen.",
+      "auto": "모델 분류기가 도구 호출마다 승인 여부를 판단합니다. 손이 덜 가면서도 권한 우회보다 안전하며, 거부될 수도 있습니다.",
       "acceptEdits": "워크스페이스 내에서 모든 명령어가 자동 실행됩니다. 샌드박스 내 완전 자동 모드.",
       "bypassPermissions": "제한 없는 전체 시스템 접근. 모든 명령어가 전체 디스크 및 네트워크 접근 권한으로 자동 실행됩니다. 주의해서 사용하세요.",
       "plan": "계획 모드 - 명령어가 실행되지 않습니다"
@@ -238,10 +238,42 @@
     "forkFromHere": "여기서 분기"
   },
   "composer": {
+    "reasoning": "추론",
+    "model": "모델",
+    "loadingModels": "모델 불러오는 중…",
+    "modelMenu": "모델, 노력 정도, 권한 선택",
+    "permission": "권한",
+    "permissionHeading": "{{provider}} 작업을 어떻게 승인할까요?",
     "editing": {
       "title": "이전 메시지를 교체하는 중",
       "filesNotReverted": "이미 변경된 파일은 되돌리지 않습니다",
       "cancel": "취소"
+    },
+    "effort": "노력 정도",
+    "effortLevels": {
+      "default": "기본",
+      "none": "없음",
+      "minimal": "최소",
+      "thinking": "사고",
+      "low": "낮음",
+      "medium": "보통",
+      "high": "높음",
+      "xhigh": "매우 높음",
+      "max": "최대",
+      "ultra": "울트라"
+    },
+    "effortDescriptions": {
+      "default": "CLI 설정 또는 모델 권장값을 사용합니다",
+      "none": "확장 추론 없이 바로 응답",
+      "minimal": "추론을 거의 하지 않는 가장 빠른 응답",
+      "thinking": "모델의 확장 사고를 켭니다",
+      "low": "가벼운 추론으로 빠르게 응답",
+      "medium": "속도와 추론 깊이의 균형",
+      "high": "복잡한 문제를 위한 더 깊은 추론",
+      "xhigh": "복잡한 문제를 위한 한층 더 깊은 추론",
+      "max": "가장 어려운 문제를 위한 최대 추론 깊이",
+      "ultra": "자동 작업 위임까지 포함한 최대 추론",
+      "ultracode": "최고 노력 정도에 워크플로 오케스트레이션까지 적용"
     }
   },
   "misc": {
